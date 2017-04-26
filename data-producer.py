@@ -1,4 +1,5 @@
 # - get data and write to kafka 
+import atexit
 import logging
 import json
 from flask import (Flask, jsonify)
@@ -24,6 +25,17 @@ schedule.add_executor('threadpool')
 schedule.start()
 
 symbols = set() 
+def shutdown_hook(): 
+	# - close kafka producer
+	# - scheduler
+	logger.info('shutdown kafka producer')
+	producer.flush(10)
+	producer.close()
+	logger.info('shutdown scheduler')
+	scheduler.shutdown()
+
+
+
 
 def fetch_price(symbol):
 	try: 
@@ -75,4 +87,8 @@ def del_stock(symbol):
 		schedule.remove_job(symbol)
 
 	return jsonify(list(symbols)),200
+
+# - setup proper shutdown hook
+atexit.register(shutdown_hook)
+
 app.run(host= '0.0.0.0'. port = 5000, debug = True)
